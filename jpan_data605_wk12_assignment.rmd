@@ -1,0 +1,220 @@
+---
+title: "data 605 assignment 12"
+author: "Jun Pan"
+date: "April 20, 2019"
+output: html_document
+---
+
+
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(car)
+library(caret)
+library(corrplot)
+library(data.table)
+library(dplyr)
+library(geoR)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(knitr)
+library(MASS)
+library(naniar)
+library(nortest)
+library(psych)
+library(testthat)
+```
+
+
+
+
+
+
+`
+
+
+The attached who.csv dataset contains real-world data from 2008.  The variables included follow. 
+ 
+Country:  name of the country LifeExp:  average life expectancy for the country in years InfantSurvival:  proportion of those surviving to one year or more Under5Survival:  proportion of those surviving to five years or more TBFree:  proportion of the population without TB. PropMD:  proportion of the population who are MDs PropRN:  proportion of the population who are RNs PersExp:  mean personal expenditures on healthcare in US dollars at average exchange rate GovtExp:  mean government expenditures per capita on healthcare, US dollars at average exchange rate TotExp:  sum of personal and government expenditures. 
+ 
+ 
+1. Provide a scatterplot of LifeExp~TotExp, and run simple linear regression.  Do not transform the variables.  Provide and interpret the F statistics, R^2, standard error,and p-values only.  Discuss whether the assumptions of simple linear regression met. 
+```{r}
+life_exp <- read.csv("C:/Users/tbao/Desktop/CUNY MSDS notes/DATA 605/WK 12/who.csv")
+```
+ 
+```{r}
+summary(life_exp)
+```
+
+```{r}
+str(life_exp)
+```
+
+```{r}
+#scatter plot of single linear model
+life_exp_lm <- lm(LifeExp ~ TotExp, data=life_exp)
+
+
+plot(LifeExp~TotExp, data=life_exp, 
+     xlab="Total Expenditures", ylab="Life Expectancy",
+     main="Life Expectancy vs Total Expenditures")
+abline(life_exp_lm)
+
+```
+
+```{r}
+summary(life_exp_lm)
+```
+
+```{r}
+plot(life_exp_lm$fitted.values, life_exp_lm$residuals, 
+     xlab="Fitted Values", ylab="Residuals",
+     main="Residuals Plot")
+abline(h=0)
+```
+
+
+```{r}
+qqnorm(life_exp_lm$residuals)
+qqline(life_exp_lm$residuals)
+```
+From the scatter plot, residual plot and qq plot, we can conclude that the relationship is not linear and the observers are not randomly distributed. 
+Residual standard error is 9.371 and F-statistic is 65.26. Average life expectancy is 67.38, the SE is reasonable.    R2 is only 0.2577 (so the model explains only 25.77% of variability). Although F-statistics is high. P-value is nearly 0, the relationship between the two variables is not due to random variation.  
+
+
+
+
+
+
+
+
+2. Raise life expectancy to the 4.6 power (i.e., LifeExp^4.6).  Raise total expenditures to the 0.06 power (nearly a log transform, TotExp^.06). Plot LifeExp^4.6  as a function of TotExp^.06, and r re-run the simple regression model using the transformed variables.  Provide and interpret the F statistics, R^2, standard error, and p-values.   Which model is "better?" 
+
+
+```{r}
+LifeExp4.6 <- life_exp$LifeExp^4.6
+TotExp0.06 <- life_exp$TotExp^0.06
+
+
+life_exp_lm2 <- lm(LifeExp4.6 ~ TotExp0.06)
+
+
+plot(LifeExp4.6~TotExp0.06, 
+     xlab="Total Expenditures", ylab="Life Expectancy",
+     main="Life Expectancy vs Total Expenditures (Transformed)")
+abline(life_exp_lm)
+
+```
+```{r}
+summary(life_exp_lm2)
+```
+```{r}
+plot(life_exp_lm2$fitted.values, life_exp_lm2$residuals, 
+     xlab="Fitted Values", ylab="Residuals",
+     main="Residuals Plot")
+abline(h=0)
+
+```
+
+```{r}
+qqnorm(life_exp_lm2$residuals)
+qqline(life_exp_lm2$residuals)
+```
+
+From the scatter plot, we can see the retionship is close to linear.  The residual plot shows the most of variables are randomly distributed around 0 although looks a little big left skewed.  The qq plot shows a nearly linear relationship between the two variables.
+
+Residual standard error is 90,490,000 and. SE is high compared to the non-transformed variables.  R2 is 0.7298, which isexplains 72.98% of variability. F-statistic is 507.7, P-value is again nearly 0,  the relationship is not due to random variation.
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+3. Using the results from 3, forecast life expectancy when TotExp^.06 =1.5.  Then forecast life expectancy when TotExp^.06=2.5.  
+
+ 
+ 
+```{r}
+range <- data.frame(TotExp0.06 = c(1.5,2.5))
+predict(life_exp_lm2, range,interval="predict")^(1/4.6)
+```
+ 
+Predicting the values at 1.5 adn 2.5 provides the following results.
+
+The prediction at 1.5 is 63 years with a CI(35.93545, 73.00793).
+
+The prediction at 2.5 is 87 year with a CI(81.80643, 90.43414)
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+4. Build the following multiple regression model and interpret the F Statistics, R^2, standard error, and p-values.  How good is the model? 
+ 
+LifeExp = b0+b1 x PropMd + b2 x TotExp  +b3 x PropMD x TotExp 
+
+
+ 
+```{r}
+life_exp_lm3 <- lm(LifeExp ~ PropMD + TotExp + TotExp:PropMD, data=life_exp)
+
+
+summary(life_exp_lm3)
+```
+
+```{r}
+plot(life_exp_lm3$fitted.values, life_exp_lm3$residuals, 
+     xlab="Fitted Values", ylab="Residuals",
+     main="Residuals Plot")
+abline(h=0)
+```
+```{r}
+qqnorm(life_exp_lm3$residuals)
+qqline(life_exp_lm3$residuals)
+```
+
+Residuals plots shows there is no constant variability and that residuals are not normally distributed. QQ plot shows not a very good linear fit.  Residual standard error is 8.765 and F-statistic is 34.49. Compare to the average of  life expectancy is 67.38, the SE is Ok.   R2 equals to 0.3574 which means the model explains only 35.74% of variability. F-statistics is fairly high and P-value is nearly 0, so the relationship is not due to random variation.
+
+
+
+
+
+
+
+
+
+ 
+ 
+5.   Forecast LifeExp when PropMD=.03 and TotExp = 14.  Does this forecast seem realistic?  Why or why not? 
+
+```{r}
+condition <- data.frame(PropMD=0.03, TotExp=14)
+predict(life_exp_lm3, condition,interval="predict")
+```
+
+The prediction is 107.70 years with 95% confidence interval between 84.25 and 131.14. The prediction does not make sense in real world.  There is nothing in our data to support this prediction and it goes against common sense. It is not a good and useful model.  
+
+
+
+
+
+
+
+ 
